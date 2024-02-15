@@ -51,14 +51,14 @@ steps:
 #         exit 1
 #       fi
 
-- name: 'gcr.io/cloud-builders/kubectl'
-  args:
-    - 'expose'
-    - 'deployment'
-    - '$_DEPLOYMENT_NAME'
-    - '--type=LoadBalancer'
-    - '--port=9003'
-    - '--target-port=9003'
+# - name: 'gcr.io/cloud-builders/kubectl'
+#   args:
+#     - 'expose'
+#     - 'deployment'
+#     - '$_DEPLOYMENT_NAME'
+#     - '--type=LoadBalancer'
+#     - '--port=9003'
+#     - '--target-port=9003'
 
   # waitFor:
   #   - check-service
