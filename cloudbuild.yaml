@@ -1,0 +1,70 @@
+# Define substitutions
+substitutions:
+  _PROJECT: shashankr-2
+  _IMAGE_NAME: nodeapp-image-4
+  _DEPLOYMENT_NAME: nodeapp-git-4
+  _CONTAINER_NAME: nodeapp-image-4
+  _CLUSTER_NAME: shashank-cluster-1
+  _COMPUTE_ZONE: us-central1-a
+
+steps:
+# Build the Docker image
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/$_PROJECT/$_IMAGE_NAME:$SHORT_SHA', '.']
+
+# Push the Docker image to Google Container Registry
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/$_PROJECT/$_IMAGE_NAME:$SHORT_SHA']
+
+# Create the Kubernetes deployment
+- name: 'gcr.io/cloud-builders/kubectl'
+  args:
+    - 'create'
+    - 'deployment'
+    - '$_DEPLOYMENT_NAME'
+    - '--image=gcr.io/$_PROJECT/$_IMAGE_NAME:$SHORT_SHA'
+  env:
+  - 'CLOUDSDK_COMPUTE_ZONE=$_COMPUTE_ZONE'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=$_CLUSTER_NAME'
+  - 'KUBECONFIG=/workspace/.kube/config'
+
+# Deploy the application to GKE
+- name: 'gcr.io/cloud-builders/kubectl'
+  args: ['set', 'image', 'deployment/$_DEPLOYMENT_NAME', '$_CONTAINER_NAME=gcr.io/$_PROJECT/$_IMAGE_NAME:$SHORT_SHA']
+  env:
+  - 'CLOUDSDK_COMPUTE_ZONE=$_COMPUTE_ZONE'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=$_CLUSTER_NAME'
+  - 'KUBECONFIG=/workspace/.kube/config'
+
+# # Check if the service already exists
+# - name: 'gcr.io/cloud-builders/kubectl'
+#   id: check-service
+#   entrypoint: '/bin/sh'
+#   args:
+#     - '-c'
+#     - |
+#       if kubectl get service $_DEPLOYMENT_NAME-service -o jsonpath='{.metadata.name}' 2>/dev/null; then
+#         echo "Service already exists, skipping expose step."
+#         exit 0
+#       else
+#         echo "Service does not exist, proceeding with expose step."
+#         exit 1
+#       fi
+
+- name: 'gcr.io/cloud-builders/kubectl'
+  args:
+    - 'expose'
+    - 'deployment'
+    - '$_DEPLOYMENT_NAME'
+    - '--type=LoadBalancer'
+    - '--port=9003'
+    - '--target-port=9003'
+
+  # waitFor:
+  #   - check-service
+
+  env:
+  - 'CLOUDSDK_COMPUTE_ZONE=$_COMPUTE_ZONE'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=$_CLUSTER_NAME'
+  - 'KUBECONFIG=/workspace/.kube/config'
+
